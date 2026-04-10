@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STUBLENDZ</title>
+
+<style>
+body {
+  margin:0;
+  font-family: Arial;
+  background: linear-gradient(135deg, #000000, #1a0000);
+  color:white;
+}
+
+header {
+  text-align:center;
+  padding:20px;
+  border-bottom:2px solid red;
+}
+
+h1 { color:red; letter-spacing:2px; }
+
+.section {
+  padding:40px 20px;
+  max-width:1000px;
+  margin:auto;
+}
+
+input, select, textarea {
+  width:100%;
+  padding:10px;
+  margin:10px 0;
+  border:none;
+  border-radius:5px;
+}
+
+button {
+  background:red;
+  color:white;
+  padding:10px;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
+}
+
+.time-slots {
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(80px,1fr));
+  gap:8px;
+}
+
+.time-slots button {
+  background:#222;
+}
+
+.time-slots button.booked {
+  background:#555;
+  cursor:not-allowed;
+}
+
+.time-slots button.active {
+  background:red;
+}
+
+.card {
+  background:#111;
+  padding:15px;
+  border-radius:10px;
+  margin-bottom:10px;
+}
+
+.hidden { display:none; }
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>STUBLENDZ</h1>
+  <button onclick="toggleDashboard()">Owner Dashboard</button>
+</header>
+
+<!-- BOOKING PAGE -->
+<section class="section" id="bookingPage">
+  <h2>Book Appointment</h2>
+
+  <input type="text" id="name" placeholder="Name">
+  <input type="tel" id="phone" placeholder="Phone">
+
+  <select id="service">
+    <option value="25">Haircut $25</option>
+    <option value="30">Fade + Lineup $30</option>
+    <option value="35">Haircut + Beard $35</option>
+  </select>
+
+  <input type="date" id="date">
+
+  <div class="time-slots" id="times"></div>
+
+  <button onclick="book()">Book Now</button>
+</section>
+
+<!-- DASHBOARD -->
+<section class="section hidden" id="dashboard">
+  <h2>Bookings</h2>
+  <div id="bookingsList"></div>
+  <button onclick="clearBookings()">Clear All</button>
+</section>
+
+<script>
+const times = [
+"10:00","10:30","11:00","11:30",
+"12:00","12:30","1:00","1:30",
+"2:00","2:30","3:00","3:30",
+"4:00","4:30","5:00","5:30"
+];
+
+const timesDiv = document.getElementById("times");
+let selectedTime = "";
+
+function renderTimes() {
+  timesDiv.innerHTML = "";
+  const booked = JSON.parse(localStorage.getItem("bookings") || "[]");
+
+  times.forEach(t => {
+    const btn = document.createElement("button");
+    btn.textContent = t;
+
+    if (booked.find(b => b.time === t && b.date === date.value)) {
+      btn.classList.add("booked");
+      btn.disabled = true;
+    }
+
+    btn.onclick = () => {
+      document.querySelectorAll(".time-slots button")
+        .forEach(b => b.classList.remove("active"));
+
+      btn.classList.add("active");
+      selectedTime = t;
+    };
+
+    timesDiv.appendChild(btn);
+  });
+}
+
+date.addEventListener("change", renderTimes);
+
+function book() {
+  if (!selectedTime) return alert("Select a time");
+
+  const booking = {
+    name: name.value,
+    phone: phone.value,
+    service: service.value,
+    date: date.value,
+    time: selectedTime
+  };
+
+  let bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
+
+  // PREVENT DOUBLE BOOKING
+  if (bookings.find(b => b.date === booking.date && b.time === booking.time)) {
+    return alert("Time already booked!");
+  }
+
+  bookings.push(booking);
+  localStorage.setItem("bookings", JSON.stringify(bookings));
+
+  alert("Booked!");
+  renderTimes();
+  loadDashboard();
+}
+
+function toggleDashboard() {
+  bookingPage.classList.toggle("hidden");
+  dashboard.classList.toggle("hidden");
+  loadDashboard();
+}
+
+function loadDashboard() {
+  const list = document.getElementById("bookingsList");
+  const bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
+
+  list.innerHTML = "";
+
+  bookings.forEach(b => {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <strong>${b.name}</strong><br>
+      ${b.date} @ ${b.time}<br>
+      $${b.service}
+    `;
+    list.appendChild(div);
+  });
+}
+
+function clearBookings() {
+  localStorage.removeItem("bookings");
+  loadDashboard();
+  renderTimes();
+}
+
+renderTimes();
+</script>
+
+</body>
+</html>
